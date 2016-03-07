@@ -43,8 +43,11 @@ def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma):
         
         #print(type(broad_sample.value))
         
-        y_u = map(lambda x: (data_hash.map(lambda kv:                                            (kv[1][0].label *                                             kv[1][1] *                                             rbfKernel(gamma,kv[1][0].features, x[1][0].features))).reduce(lambda x,y: x+y)),
-                 broad_sample.value)
+        y_u = map(lambda x: (data_hash.map(lambda kv:\
+                                           (kv[1][0].label * \
+                                            kv[1][1] * \
+                                            rbfKernel(gamma,kv[1][0].features, x[1][0].features))).reduce(lambda x,y: x+y)),\
+                  broad_sample.value)
         
         y = map(lambda x: x[1][0].label, sample)
         local_set = {}
@@ -114,7 +117,7 @@ def pPackSVM_predict(data, model, gamma, s):
 # In[5]:
 
 def getAccuracy(test_data, model, gamma,s):
-    pred = map(lambda x: pPackSVM_predict(x, model, gamma, s), test_data)
+    pred = map(lambda x: pPackSVM_predict(x, model, gamma, s) * x.label, test_data)
     tp = sum(1 for x in pred if x > 0)
     N = len(test)
 
@@ -129,7 +132,7 @@ if __name__ == "__main__":
     sc = SparkContext(conf = conf)
 
 
-    data = MLUtils.loadLibSVMFile(sc, 'data/libsvm_test.txt')
+    data = MLUtils.loadLibSVMFile(sc, 'data/heart_scale.txt')
     (training, test) = data.randomSplit([0.7, 0.3])
     
         
@@ -142,9 +145,9 @@ if __name__ == "__main__":
     iterations = np.arange(1,5) * n_train / 2
     pack_size = 100
     
-    for n_iters in [4]:
-        model, s = pPackSVM_train(training, n_iters, pack_size, 1.0/ n_train, 1.0)
-        acc = getAccuracy(test, model, 1, s)
+    for n_iters in [10]:
+        model, s = pPackSVM_train(training, n_iters, pack_size, 1.0/ n_train, 0.1)
+        acc = getAccuracy(test, model, 0.1, s)
     
     print("Accuracy: " + str(acc))
 
