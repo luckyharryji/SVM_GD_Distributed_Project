@@ -29,7 +29,6 @@ if __name__ == "__main__":
     # 20, to 20 * 20 to get reconstruction error
     final_s = np.diag(s)
 
-
     matrix_after_svd = U.dot((final_s.dot(Vt)))
     nz_index = sparse_data.nonzero()
     difference = np.asarray(sparse_data[nz_index] - matrix_after_svd[nz_index])

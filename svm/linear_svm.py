@@ -18,7 +18,7 @@ def rbfKernel(gamma, x1, x2):
 
 # In[13]:
 
-def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma, test):
+def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma):
     #model = train_data.map(lambda x: (x, 0.))
     
     
@@ -35,7 +35,7 @@ def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma, test):
         
         print("iteration:"+str(t))
         
-        sample = data_hash.takeSample(False, pack_size)
+        sample = data_hash.takeSample(True, pack_size)
         
         broad_sample = sc.broadcast(sample)
         
@@ -49,10 +49,10 @@ def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma, test):
                                             rbfKernel(gamma,kv[1][0].features, x[1][0].features))).reduce(lambda x,y: x+y)),\
                   broad_sample.value)
         
-        y = map(lambda x: x[1][0].label, broad_sample.value)
+        y = map(lambda x: x[1][0].label, sample)
         local_set = {}
         
-        inner_prod = pair_idx.map(lambda x: (tuple(x), rbfKernel(gamma, broad_sample.value[x[0]][1][0].features, broad_sample.value[x[1]][1][0].features))).cache()
+        inner_prod = pair_idx.map(lambda x: (tuple(x), rbfKernel(gamma, sample[x[0]][1][0].features, sample[x[1]][1][0].features))).cache()
         #inner_prod = pair_idx.map(lambda x: (tuple(x), 0.5)).cache()
         
         
@@ -65,7 +65,7 @@ def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma, test):
         
         #Compute sub gradient
         for i in range(pack_size):
-            t = t * pack_size + i + 1
+            t = t + 1
             s = s * (1. - (1.0/t))
             #print(lambda0, t, s)
             
@@ -76,11 +76,11 @@ def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma, test):
                 
                 norm = norm + (2. * y[i]) / (lambda0 * t) * y_u[i] + np.square(y[i] / (lambda0 * t))* inner_prod[(i,i)]
                 
-                alpha = broad_sample.value[i][1][1]
+                alpha = sample[i][1][1]
                 
                 
-                local_set[broad_sample.value[i][0]] = (broad_sample.value[i][1][0], alpha + (1. / (lambda0 * t *s)))
-                # print(broad_sample.value[i][0])
+                local_set[sample[i][0]] = (sample[i][1][0], alpha + (1. / (lambda0 * t *s)))
+                
                 for ite in range(i+1,pack_size-1):
                     y_u[ite] = y_u[ite] + y[ite] / (lambda0 * t) * inner_prod[(i,ite)]
                     
@@ -97,9 +97,6 @@ def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma, test):
             hashtable[k] = v
         data_hash = sc.parallelize(hashtable.iteritems())   
         data_hash.persist()
-        model_temp = data_hash.map(lambda kv: (kv[1][0], kv[1][1])).filter(lambda kv: kv[1]>0).cache()
-        acc_temp = getAccuracy(test, model_temp, 0.1, s)
-        print("Accuracy: " + str(acc_temp))
     
     model = data_hash.map(lambda kv: (kv[1][0], kv[1][1])).filter(lambda kv: kv[1]>0).cache()
     data_hash.unpersist()
@@ -124,8 +121,8 @@ def getAccuracy(test_data, model, gamma,s):
     tp = sum(1 for x in pred if x > 0)
     N = len(test)
 
-    # print(pred)
-    # print(tp, N)
+    print(pred)
+    print(tp, N)
     return float(tp) / N
 
 
@@ -155,8 +152,8 @@ if __name__ == "__main__":
     iterations = np.arange(1,5) * n_train / 2
     pack_size = 100
     
-    for n_iters in [100]:
-        model, s = pPackSVM_train(training, n_iters, pack_size, float(0.3)/ n_train, 0.1, test)
+    for n_iters in [1000]:
+        model, s = pPackSVM_train(training, n_iters, pack_size, 0.3, 0.1)
         acc = getAccuracy(test, model, 0.1, s)
     
     print("Accuracy: " + str(acc))
