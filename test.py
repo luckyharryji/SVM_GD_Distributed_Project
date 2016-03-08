@@ -6,6 +6,12 @@ from pyspark import SparkContext, SparkConf
 from pyspark.mllib.regression import LabeledPoint
 from pyspark.mllib.util import MLUtils
 from pyspark.mllib.linalg import SparseVector
+from pylab import *
+import matplotlib.pyplot as plt
+    
+
+import time
+import json
 
 
 # In[2]:
@@ -31,6 +37,8 @@ def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma, test):
     #pair_idx = sc.parallelize(range(0, pack_size)).flatMap(lambda x : (range(x, pack_size).map(lambda y: (x,y)))).persist()
     pair_idx = sc.parallelize(range(0, pack_size)).flatMap(lambda x : [(x, y) for y in range(0, pack_size)]).cache()
     
+    iteration_time = list()
+    precision = list()
     for t in range(1, n_iter+1):
         
         print("iteration:"+str(t))
@@ -64,8 +72,10 @@ def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma, test):
 
         
         #Compute sub gradient
+        t_temp = t
         for i in range(pack_size):
-            t = t * pack_size + i + 1
+            t = t_temp * pack_size + i + 1
+            print("t: "+str(t))
             s = s * (1. - (1.0/t))
             #print(lambda0, t, s)
             
@@ -99,7 +109,13 @@ def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma, test):
         data_hash.persist()
         model_temp = data_hash.map(lambda kv: (kv[1][0], kv[1][1])).filter(lambda kv: kv[1]>0).cache()
         acc_temp = getAccuracy(test, model_temp, 0.1, s)
+        iteration_time.append(t)
+        precision.append(acc_temp)
         print("Accuracy: " + str(acc_temp))
+    plt.plot(iteration_time, precision)
+    savefig(str(pack_size)+'.png', bbox_inches='tight')
+    # plt.show()
+
     
     model = data_hash.map(lambda kv: (kv[1][0], kv[1][1])).filter(lambda kv: kv[1]>0).cache()
     data_hash.unpersist()
@@ -153,11 +169,18 @@ if __name__ == "__main__":
     test = test.collect()
     
     iterations = np.arange(1,5) * n_train / 2
-    pack_size = 100
-    
-    for n_iters in [100]:
+    # pack_size = 100
+
+    time_cost = list()
+    for pack_size in [150, 200, 250]:
+        n_iters = 300
+        start_time = time.time()
         model, s = pPackSVM_train(training, n_iters, pack_size, float(0.3)/ n_train, 0.1, test)
-        acc = getAccuracy(test, model, 0.1, s)
+        end_time = time.time()
+        time_cost.append((start_time, end_time))
+        # acc = getAccuracy(test, model, 0.1, s)
+    with open("time.json",'wb') as f_out:
+        f_out.write(json.dumps(time_cost))
     
     print("Accuracy: " + str(acc))
 

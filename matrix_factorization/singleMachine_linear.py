@@ -8,6 +8,8 @@ import sys
 from scipy.sparse.linalg import svds
 from scipy.sparse import csr_matrix
 import numpy
+from pylab import *
+import matplotlib.pyplot as plt
 
 def CSV_to_sparse(netflix_file):
     row_indices = []
@@ -23,6 +25,8 @@ def CSV_to_sparse(netflix_file):
     return csr_matrix((data_rating, (row_indices, col_indices)))
 
 def matrix_factorization(R, P, Q, K, steps=5000, alpha=0.0002, beta=0.02):
+    iterative_time = list()
+    error = list()
     Q = Q.T
     for step in xrange(steps):
         for i in xrange(len(R)):
@@ -40,9 +44,13 @@ def matrix_factorization(R, P, Q, K, steps=5000, alpha=0.0002, beta=0.02):
                     e = e + pow(R[i][j] - numpy.dot(P[i,:],Q[:,j]), 2)
                     for k in xrange(K):
                         e = e + (beta/2) * ( pow(P[i][k],2) + pow(Q[k][j],2) )
+        iterative_time.append(step)
+        error.append(e)
         print "iterative steps: ", e, step
         if e < 0.001:
             break
+    plt.plot(iterative_time, error)
+    savefig('single_mf.png', bbox_inches='tight')
     return P, Q.T
 
 if __name__ == "__main__":

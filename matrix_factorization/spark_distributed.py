@@ -1,4 +1,6 @@
 # from __future__ import print_function
+from pylab import *
+import matplotlib.pyplot as plt
 from pyspark import SparkContext
 import sys
 from scipy.sparse import csr_matrix
@@ -91,6 +93,9 @@ if __name__ == "__main__":
 
     sc = SparkContext(appName="Xiangyu and Nianzu: Distributed Stochastic Gradient Descent with Spark for MF problem")
     input_data = sc.textFile("sample_data.csv")
+    logger = sc._jvm.org.apache.log4j
+    logger.LogManager.getLogger("org").setLevel( logger.Level.OFF )
+    logger.LogManager.getLogger("akka").setLevel( logger.Level.OFF )
 
     # data in tuple form
     ratings_data = input_data.map(lambda row: [int(col_data) for col_data in row.split(',')])
@@ -110,6 +115,8 @@ if __name__ == "__main__":
     iterations = 0
     # algorithm 2
     # run till number of itertaions provided by user
+    iterative_time = list()
+    error_count = list()
     while iterations < I:
         # random number to select startum
         random_num = random.randrange(999999)
@@ -153,10 +160,16 @@ if __name__ == "__main__":
         total_update_count += curr_upd_count
         # print the l2 loss for alogrithm
         # send sparse matrix, W and H to find the loss
-        print (L2_loss(CSV_to_sparse(netflix_file), W_result_temp, H_result)) 
+        error_temp = L2_loss(CSV_to_sparse(input_data), W_result_temp, H_result)
+        print ("loss in step: " + str(iterations))
+        print (error_temp) 
         # increment the loop
+        iterative_time.append(iterations)
+        error_count.append(error_temp)
         iterations += 1
-    
+
+    plt.plot(iterative_time, error_count)
+    savefig('distributed_mf2.png', bbox_inches='tight')
     # L2 Loss after number of iterations
     print (L2_loss(CSV_to_sparse(input_data), W_result_temp, H_result))
     # M = sc.parallelize(W_result_temp.dot(H_result))
