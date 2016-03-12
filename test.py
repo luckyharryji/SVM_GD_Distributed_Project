@@ -112,8 +112,14 @@ def pPackSVM_train(train_data, n_iter, pack_size, lambda0, gamma, test):
         iteration_time.append(t)
         precision.append(acc_temp)
         print("Accuracy: " + str(acc_temp))
+    with open("result1" + str(pack_size) + ".json",'wb') as f_out:
+        f_out.write(json.dumps(iteration_time))
+    with open("result2" + str(pack_size) + ".json",'wb') as f_out:
+        f_out.write(json.dumps(precision))
     plt.plot(iteration_time, precision)
     savefig(str(pack_size)+'.png', bbox_inches='tight')
+    iteration_time = list()
+    precision = list()
     # plt.show()
 
     
@@ -172,8 +178,9 @@ if __name__ == "__main__":
     # pack_size = 100
 
     time_cost = list()
-    for pack_size in [150, 200, 250]:
-        n_iters = 300
+    total_iteration = 30000
+    for pack_size in [50, 100, 150, 200, 250]:
+        n_iters = total_iteration / pack_size
         start_time = time.time()
         model, s = pPackSVM_train(training, n_iters, pack_size, float(0.3)/ n_train, 0.1, test)
         end_time = time.time()
