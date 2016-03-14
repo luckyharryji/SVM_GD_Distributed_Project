@@ -169,7 +169,7 @@ if __name__ == "__main__":
         iterations += 1
 
     plt.plot(iterative_time, error_count)
-    savefig('distributed_mf2.png', bbox_inches='tight')
+    savefig('distributed_5000_distributed.png', bbox_inches='tight')
     # L2 Loss after number of iterations
     print (L2_loss(CSV_to_sparse(input_data), W_result_temp, H_result))
     # M = sc.parallelize(W_result_temp.dot(H_result))
