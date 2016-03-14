@@ -179,7 +179,7 @@ if __name__ == "__main__":
 
     time_cost = list()
     total_iteration = 30000
-    for pack_size in [50, 100, 150, 200, 250]:
+    for pack_size in [150]:
         n_iters = total_iteration / pack_size
         start_time = time.time()
         model, s = pPackSVM_train(training, n_iters, pack_size, float(0.3)/ n_train, 0.1, test)
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     with open("time.json",'wb') as f_out:
         f_out.write(json.dumps(time_cost))
     
-    print("Accuracy: " + str(acc))
+    # print("Accuracy: " + str(acc))
 
     sc.stop()
 

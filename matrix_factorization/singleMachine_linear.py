@@ -24,7 +24,7 @@ def CSV_to_sparse(netflix_file):
         data_rating.append(float(line_array[2]))
     return csr_matrix((data_rating, (row_indices, col_indices)))
 
-def matrix_factorization(R, P, Q, K, steps=30, alpha=0.0002, beta=0.02):
+def matrix_factorization(R, P, Q, K, steps=200, alpha=0.0002, beta=0.02):
     iterative_time = list()
     error = list()
     Q = Q.T
@@ -47,10 +47,10 @@ def matrix_factorization(R, P, Q, K, steps=30, alpha=0.0002, beta=0.02):
         iterative_time.append(step)
         error.append(e)
         print "iterative steps: ", e, step
-        if e < 0.001:
-            break
+        # if e < 0.001:
+        #     break
     plt.plot(iterative_time, error)
-    savefig('single_30_mf.png', bbox_inches='tight')
+    savefig('single_200_mf.png', bbox_inches='tight')
     return P, Q.T
 
 if __name__ == "__main__":
